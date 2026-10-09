@@ -86,4 +86,4 @@ Suricata · Python · Streamlit · Scapy · PowerShell
 
 ## Author
 
-Prapto Costa
+Prapto Charles Costa
