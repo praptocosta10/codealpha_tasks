@@ -122,3 +122,7 @@ A Streamlit web application in `dashboard/app.py` that visualizes alerts and met
 - **Loopback capture**: Ensure you use the Npcap Loopback Adapter for localhost traffic, or use pcap replay as a fallback.
 - **Dashboard won't start**: Ensure dependencies are installed by running `pip install -r requirements.txt` before starting the dashboard.
 - **Firewall blocking**: The response engine must be run in an Administrator PowerShell session for live mode to successfully add firewall rules.
+
+## Author
+Prapto Charles Costa
+Department of Information & Communication Engineering, Daffodil International University
