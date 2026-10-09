@@ -1,0 +1,19 @@
+# =============================================================================
+# NIDS Project - Python Dependencies
+# =============================================================================
+# Install with: pip install -r requirements.txt
+# =============================================================================
+
+# --- Dashboard ---
+streamlit>=1.30.0          # Web dashboard framework
+pandas>=2.0.0              # Data manipulation and analysis
+altair>=5.0.0              # Declarative statistical visualization
+
+# --- Response Engine ---
+# (uses only Python standard library: json, subprocess, threading, argparse, ipaddress)
+
+# --- Attack Simulation / PCAP Generation ---
+scapy>=2.5.0               # Packet crafting and pcap generation (fallback tests)
+
+# --- Utilities ---
+requests>=2.31.0           # HTTP requests (for rule download in setup)

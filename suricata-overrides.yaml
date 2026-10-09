@@ -1,0 +1,256 @@
+%YAML 1.1
+---
+# =============================================================================
+# NIDS Project — Suricata Configuration Overrides
+# =============================================================================
+# This file is used with Suricata's -c flag. It is a COMPLETE, standalone
+# config based on the default suricata.yaml, trimmed to the essentials.
+#
+# IMPORTANT: Use forward slashes (/) in all paths for Suricata compatibility.
+#
+# Usage:
+#   suricata.exe -c "C:/NIDS/config/suricata-overrides.yaml" -i <interface>
+# =============================================================================
+
+# ---- Logging Directory ----
+# All logs (eve.json, fast.log, stats.log) go here
+default-log-dir: "C:/NIDS/logs"
+
+# ---- Statistics ----
+stats:
+  enabled: yes
+  interval: 30
+
+# ---- Output Modules ----
+outputs:
+
+  # EVE JSON log — primary alert & event output
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      pcap-file: false
+      community-id: true
+      types:
+        - alert:
+            payload: yes
+            payload-printable: yes
+            packet: yes
+            metadata: yes
+            http-body: yes
+            http-body-printable: yes
+            tagged-packets: yes
+        - http:
+            extended: yes
+        - dns:
+            enabled: yes
+        - tls:
+            extended: yes
+        - files:
+            force-magic: no
+        - smtp:
+            extended: yes
+        - flow
+        - stats:
+            totals: yes
+            threads: no
+
+  # fast.log — one-line-per-alert text log (useful for quick checks)
+  - fast:
+      enabled: yes
+      filename: fast.log
+      append: yes
+
+  # Unified alert log (for barnyard2 compatibility, optional)
+  - unified2-alert:
+      enabled: no
+
+# ---- Network Variables ----
+vars:
+  address-groups:
+    HOME_NET: "[192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,127.0.0.0/8]"
+    EXTERNAL_NET: "!$HOME_NET"
+    HTTP_SERVERS: "$HOME_NET"
+    SMTP_SERVERS: "$HOME_NET"
+    SQL_SERVERS: "$HOME_NET"
+    DNS_SERVERS: "$HOME_NET"
+    TELNET_SERVERS: "$HOME_NET"
+    AIM_SERVERS: "$EXTERNAL_NET"
+    DC_SERVERS: "$HOME_NET"
+    DNP3_SERVER: "$HOME_NET"
+    DNP3_CLIENT: "$HOME_NET"
+    MODBUS_CLIENT: "$HOME_NET"
+    MODBUS_SERVER: "$HOME_NET"
+    ENIP_CLIENT: "$HOME_NET"
+    ENIP_SERVER: "$HOME_NET"
+
+  port-groups:
+    HTTP_PORTS: "80"
+    SHELLCODE_PORTS: "!80"
+    ORACLE_PORTS: 1521
+    SSH_PORTS: 22
+    DNP3_PORTS: 20000
+    MODBUS_PORTS: 502
+    FILE_DATA_PORTS: "[$HTTP_PORTS,110,143]"
+    FTP_PORTS: 21
+    GENEVE_PORTS: 6081
+    VXLAN_PORTS: 4789
+    TEREDO_PORTS: 3544
+
+# ---- Rule Files ----
+# Path where rule files are stored
+default-rule-path: "C:/NIDS/rules"
+
+# Rule files to load
+rule-files:
+  - local.rules
+  # Uncomment the line below after downloading ET Open rules:
+  # - suricata.rules
+
+# Classification and reference configs (from Suricata install)
+# These will be set by setup.ps1 based on your Suricata install path
+classification-file: "C:/Program Files/Suricata/classification.config"
+reference-config-file: "C:/Program Files/Suricata/reference.config"
+
+# ---- Detection Engine ----
+detect:
+  profile: medium
+  custom-values:
+    toclient-groups: 3
+    toserver-groups: 25
+  sgh-mpm-context: auto
+  inspection-recursion-limit: 3000
+
+# ---- Application Layer Protocols ----
+app-layer:
+  protocols:
+    http:
+      enabled: yes
+      # Server config
+      libhtp:
+        default-config:
+          personality: IDS
+          request-body-limit: 100kb
+          response-body-limit: 100kb
+          request-body-minimal-inspect-size: 32kb
+          request-body-inspect-window: 4kb
+          response-body-minimal-inspect-size: 40kb
+          response-body-inspect-window: 16kb
+          http-body-inline: auto
+          double-decode-path: no
+          double-decode-query: no
+
+    tls:
+      enabled: yes
+      detection-ports:
+        dp: 443
+
+    smtp:
+      enabled: yes
+
+    ftp:
+      enabled: yes
+
+    dns:
+      # Enable DNS detection — needed for our blocklist rule
+      tcp:
+        enabled: yes
+        detection-ports:
+          dp: 53
+      udp:
+        enabled: yes
+        detection-ports:
+          dp: 53
+
+    ssh:
+      enabled: yes
+
+    rdp:
+      enabled: yes
+
+    dhcp:
+      enabled: yes
+
+    smb:
+      enabled: yes
+      detection-ports:
+        dp: 139, 445
+
+    nfs:
+      enabled: yes
+
+    ikev2:
+      enabled: yes
+
+    krb5:
+      enabled: yes
+
+    snmp:
+      enabled: yes
+
+    sip:
+      enabled: no
+
+    rfb:
+      enabled: yes
+      detection-ports:
+        dp: 5900, 5901, 5902, 5903, 5904, 5905, 5906, 5907, 5908, 5909
+
+    mqtt:
+      enabled: no
+
+    http2:
+      enabled: yes
+
+# ---- Stream Engine ----
+stream:
+  memcap: 256mb
+  checksum-validation: yes
+  inline: auto
+  reassembly:
+    memcap: 512mb
+    depth: 1mb
+    toserver-chunk-size: 2560
+    toclient-chunk-size: 2560
+    randomize-chunk-size: yes
+
+# ---- Host / Flow Settings ----
+host:
+  hash-size: 4096
+  prealloc: 1000
+  memcap: 32mb
+
+flow:
+  memcap: 128mb
+  hash-size: 65536
+  prealloc: 10000
+  emergency-recovery: 30
+
+flow-timeouts:
+  default:
+    new: 30
+    established: 300
+    closed: 0
+    bypassed: 100
+    emergency-new: 10
+    emergency-established: 100
+    emergency-closed: 0
+    emergency-bypassed: 50
+
+# ---- Threading ----
+threading:
+  set-cpu-affinity: no
+  detect-thread-ratio: 1.0
+
+# ---- Pcap capture on Windows ----
+pcap:
+  - interface: default
+    # buffer-size: 16777216
+    # bpf-filter: ""
+    # checksum-checks: auto
+    # promisc: yes
+    # snaplen: 1518
+
+# ---- Coredump ----
+coredump:
+  max-dump: unlimited

@@ -1,0 +1,2 @@
+10/08/2026-14:41:23.995442  [**] [1:1000007:1] NIDS: DNS Query to Blocklisted Domain (malware.testdomain.local) [**] [Classification: Potentially Bad Traffic] [Priority: 2] {UDP} 10.0.0.100:53 -> 10.0.0.1:53
+10/08/2026-14:41:23.995442  [**] [1:1000007:1] NIDS: DNS Query to Blocklisted Domain (malware.testdomain.local) [**] [Classification: Potentially Bad Traffic] [Priority: 2] {UDP} 10.0.0.100:53 -> 10.0.0.1:53

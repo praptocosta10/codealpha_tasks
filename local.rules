@@ -1,0 +1,78 @@
+# NIDS Custom Suricata Rules
+# Path: C:\NIDS\rules\local.rules
+# Description: Custom intrusion detection rules for the NIDS project.
+
+# ==========================================
+# SID 1000001 - Nmap SYN Scan Detection
+# ==========================================
+# Detects TCP SYN-only packets to multiple ports from the same source.
+# Uses a threshold to detect port scanning behavior (20 packets in 60 seconds).
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS: Possible Nmap SYN Port Scan Detected"; flags:S,12; threshold: type threshold, track by_src, count 20, seconds 60; classtype:attempted-recon; sid:1000001; rev:1;)
+
+# ==========================================
+# SID 1000002 - ICMP Ping Flood
+# ==========================================
+# Detects excessive ICMP echo requests from the same source.
+# Triggers if more than 50 packets are sent within 10 seconds.
+alert icmp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS: ICMP Ping Flood Detected"; itype:8; threshold: type threshold, track by_src, count 50, seconds 10; classtype:attempted-dos; sid:1000002; rev:1;)
+
+# ==========================================
+# SID 1000003 - RDP Brute-Force
+# ==========================================
+# Detects potential RDP brute-force attempts.
+# Triggers if more than 5 TCP SYN connections to port 3389 are seen within 60 seconds from the same source.
+alert tcp $EXTERNAL_NET any -> $HOME_NET 3389 (msg:"NIDS: Possible RDP Brute-Force Attempt"; flags:S,12; threshold: type threshold, track by_src, count 5, seconds 60; classtype:attempted-admin; sid:1000003; rev:1;)
+
+# ==========================================
+# SID 1000004 - SQL Injection in HTTP (UNION SELECT)
+# ==========================================
+# Detects common SQL injection patterns in HTTP URIs matching "union" and "select" keywords.
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS: SQL Injection Attempt Detected in HTTP URI"; flow:established,to_server; http.uri; content:"union"; nocase; content:"select"; nocase; distance:0; classtype:web-application-attack; sid:1000004; rev:1;)
+
+# ==========================================
+# SID 1000009 - SQL Injection Pattern (OR 1=1)
+# ==========================================
+# Detects SQL injection attempts using the "OR 1=1" logic pattern in HTTP URIs using PCRE.
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS: SQL Injection Pattern (OR 1=1) in HTTP URI"; flow:established,to_server; http.uri; pcre:"/(%27|'|%22)\s*(or|OR|Or)\s*(1\s*=\s*1|'[^']*'\s*=\s*'[^']*')/i"; classtype:web-application-attack; sid:1000009; rev:1;)
+
+# ==========================================
+# SID 1000005 - Directory Traversal
+# ==========================================
+# Detects HTTP directory traversal attempts by matching "../" patterns in the URI.
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS: HTTP Directory Traversal Attempt Detected"; flow:established,to_server; http.uri; content:"../"; classtype:web-application-attack; sid:1000005; rev:1;)
+
+# ==========================================
+# SID 1000006 - Suspicious User-Agent (sqlmap)
+# ==========================================
+# Detects the use of the 'sqlmap' vulnerability scanner by inspecting the HTTP User-Agent header.
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS: Suspicious User-Agent Detected (sqlmap)"; flow:established,to_server; http.user_agent; content:"sqlmap"; nocase; classtype:web-application-attack; sid:1000006; rev:1;)
+
+# ==========================================
+# SID 1000010 - Suspicious User-Agent (nikto)
+# ==========================================
+# Detects the use of the 'nikto' web scanner by inspecting the HTTP User-Agent header.
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS: Suspicious User-Agent Detected (nikto)"; flow:established,to_server; http.user_agent; content:"nikto"; nocase; classtype:web-application-attack; sid:1000010; rev:1;)
+
+# ==========================================
+# SID 1000007 - DNS Blocklist Query (malware.testdomain.local)
+# ==========================================
+# Detects DNS queries for a known test blocklisted domain: malware.testdomain.local.
+alert dns any any -> any any (msg:"NIDS: DNS Query to Blocklisted Domain (malware.testdomain.local)"; dns.query; content:"malware.testdomain.local"; nocase; classtype:bad-unknown; sid:1000007; rev:1;)
+
+# ==========================================
+# SID 1000011 - DNS Blocklist Query (evil.example.com)
+# ==========================================
+# Detects DNS queries for a known test blocklisted domain: evil.example.com.
+alert dns any any -> any any (msg:"NIDS: DNS Query to Blocklisted Domain (evil.example.com)"; dns.query; content:"evil.example.com"; nocase; classtype:bad-unknown; sid:1000011; rev:1;)
+
+# ==========================================
+# SID 1000008 - Cleartext FTP Credentials (USER)
+# ==========================================
+# Detects cleartext FTP authentication attempts by capturing the "USER " command.
+alert tcp any any -> any 21 (msg:"NIDS: Cleartext FTP Credentials Detected (USER command)"; flow:established,to_server; content:"USER "; depth:5; classtype:bad-unknown; sid:1000008; rev:1;)
+
+# ==========================================
+# SID 1000012 - Cleartext FTP Credentials (PASS)
+# ==========================================
+# Detects cleartext FTP authentication attempts by capturing the "PASS " command.
+alert tcp any any -> any 21 (msg:"NIDS: Cleartext FTP Credentials Detected (PASS command)"; flow:established,to_server; content:"PASS "; depth:5; classtype:bad-unknown; sid:1000012; rev:1;)

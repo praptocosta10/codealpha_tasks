@@ -1,89 +1,120 @@
-# codealpha_tasks
-# NIDS: Network Intrusion Detection System
+# Windows Network Intrusion Detection System (NIDS)
 
-A network intrusion detection system built on **Suricata** with custom detection rules and a real-time **Streamlit** dashboard. Suricata inspects traffic and writes alerts to `eve.json`, and the dashboard reads that log and visualizes the alerts as they arrive.
-
-## Features
-
-- **Custom Suricata rules**: 12 signatures in `rules/local.rules` (SIDs from 1000001), including DNS queries to blocklisted domains and SYN-only probes to sensitive ports such as RDP
-- **Real-time dashboard**: alert counters, alerts over time, top source IPs, top signatures, severity breakdown, and a recent-alerts table, with auto-refresh and severity filters
-- **Attack simulation**: Scapy-based generator that builds a test `.pcap` of attack traffic, plus test scripts for several attack types
-- **Management scripts**: PowerShell scripts to set up, start, stop and check the IDS
-- **Automated response module** (`response/`)
-- **One-click launcher** for replaying the test traffic and opening the dashboard
+A comprehensive Network Intrusion Detection System built for Windows environments using Suricata, Python, and PowerShell.
 
 ## Architecture
 
+```mermaid
+graph TD
+    A[Network Traffic\n(Npcap/Loopback)] -->|Captures Packets| B(Suricata NIDS Engine)
+    B -->|Matches Rules| C{Rules Engine\nC:\\NIDS\\rules}
+    C -->|Generates Alerts| D[Logs\nC:\\NIDS\\logs\\eve.json]
+    D -->|Tails & Parses| E(Response Engine\nresponse.py)
+    D -->|Visualizes| F(Dashboard\napp.py)
+    E -->|Executes Block| G[Windows Firewall]
+    
+    H[Test Scripts] -->|Generates Traffic| A
 ```
-Traffic / test .pcap  ->  Suricata (custom rules)  ->  eve.json + fast.log  ->  Streamlit dashboard
-```
+
+## Prerequisites
+
+- **Windows 10/11**
+- **Suricata**: Download from [suricata.io](https://suricata.io/download/) and install to `C:\Program Files\Suricata`
+- **Npcap**: Download from [npcap.com](https://npcap.com/) (Must be installed with "WinPcap API-compatible mode" and "Loopback support" enabled)
+- **Python 3.8+**: Download from [python.org](https://python.org)
+- **Nmap for Windows** (Optional): Download from [nmap.org](https://nmap.org/download) for running port scan tests
 
 ## Project Structure
 
 ```
-NIDS/
-├── config/        Suricata configuration overrides
-├── rules/         Custom detection rules (local.rules)
-├── scripts/       setup / start / stop / status (PowerShell)
-├── tests/         Attack simulations and pcap generator
-├── response/      Automated response module
-├── dashboard/     Streamlit dashboard (app.py)
-├── docs/          Project documentation and report
-├── logs/          Suricata output (eve.json, fast.log)
+C:\NIDS\
+├── config/
+│   └── suricata-overrides.yaml
+├── rules/
+│   └── local.rules
+├── scripts/
+│   ├── setup.ps1
+│   ├── start-ids.ps1
+│   ├── stop-ids.ps1
+│   └── status-ids.ps1
+├── response/
+│   └── response.py
+├── tests/
+│   ├── test_portscan.ps1
+│   ├── test_ping_flood.ps1
+│   ├── test_bruteforce.ps1
+│   ├── test_web_attacks.ps1
+│   ├── test_dns.py
+│   ├── test_ftp_cleartext.py
+│   ├── generate_pcap.py
+│   ├── local_webserver.py
+│   └── run_all_tests.py
+├── dashboard/
+│   └── app.py
+├── logs/
+├── docs/
+│   ├── README.md
+│   └── REPORT.md
 └── requirements.txt
 ```
 
-## Requirements
+## Quick Start
 
-- Windows 10/11
-- [Suricata](https://suricata.io/download/) 8.x
-- [Npcap](https://npcap.com) (required for live capture)
-- Python 3.10+
+1. **Install Prerequisites**: Ensure Suricata, Npcap, and Python are installed.
+2. **Run Setup**: 
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
+   ```
+3. **Start Suricata**:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts\start-ids.ps1
+   ```
+4. **Check Status**:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts\status-ids.ps1
+   ```
+5. **Run Tests**:
+   ```powershell
+   python tests\run_all_tests.py
+   ```
+6. **Start Dashboard**:
+   ```powershell
+   streamlit run dashboard\app.py
+   ```
+7. **Start Response Engine**:
+   - Dry-run mode: `python response\response.py`
+   - Live mode (Requires Admin): `python response\response.py --live`
+8. **Stop Suricata**:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts\stop-ids.ps1
+   ```
 
-## Setup
+## Component Details
 
-```powershell
-git clone <your-repo-url> C:\NIDS
-cd C:\NIDS
-pip install -r requirements.txt
-```
+### Suricata Engine
+The core NIDS engine that inspects network traffic against defined rules in `rules/local.rules`. Configured via `config/suricata-overrides.yaml` to ensure Windows compatibility.
 
-## Usage
+### Monitoring Scripts
+PowerShell scripts located in `scripts/` automate the deployment, start, stop, and status checking of the Suricata service.
 
-**Replay the test attack traffic through Suricata:**
+### Testing Suite
+Located in `tests/`, this includes various PowerShell and Python scripts to simulate malicious traffic (e.g., Ping Floods, Brute Force, Web Attacks) locally for verifying rules.
 
-```powershell
-& "C:\Program Files\Suricata\suricata.exe" -c "C:\NIDS\config\suricata-overrides.yaml" -S "C:\NIDS\rules\local.rules" -r "C:\NIDS\tests\attack_samples.pcap" -l "C:\NIDS\logs"
-```
+### Dashboard
+A Streamlit web application in `dashboard/app.py` that visualizes alerts and metrics parsed from Suricata's `eve.json` log file.
 
-**Start the dashboard:**
+### Response Engine
+`response/response.py` constantly monitors `eve.json` for high-severity alerts and can actively modify Windows Firewall rules to block attacking IP addresses when run in `--live` mode.
 
-```powershell
-streamlit run C:\NIDS\dashboard\app.py
-```
+## Troubleshooting
 
-Then open <http://localhost:8501> and click **Refresh Now**.
-
-For live monitoring, run `scripts\start-ids.ps1` from a PowerShell window opened as Administrator.
-
-## Results
-
-Replaying the generated test pcap (166 packets) triggers the custom rule **"DNS Query to Blocklisted Domain"**, and the alert appears on the dashboard with its source IP, destination, protocol, signature and severity.
-
-## Limitations
-
-- The test pcap is synthetic and built offline, so only rules that match single packets fire. Rules that depend on full connections or repeated attempts need live or replayed real traffic.
-- Replaying the same pcap twice logs the same alert twice.
-- The dashboard's "High Severity" counter does not exactly match the severity breakdown chart (known minor bug).
-
-## Ethical Use
-
-Only test and monitor networks and devices you own or have permission to monitor. The attack simulations are for local testing against your own machine.
-
-## Tech Stack
-
-Suricata · Python · Streamlit · Scapy · PowerShell
-
-## Author
-
-Prapto Charles Costa
+- **Npcap not found**: Copy `wpcap.dll` and `Packet.dll` from `C:\Windows\System32\Npcap\` to the Suricata installation directory (`C:\Program Files\Suricata`).
+- **Interface names**: Use `suricata.exe --list-interfaces` to find the correct interface names for your machine.
+- **Permission denied**: Ensure you are running PowerShell as Administrator.
+- **Rules not loading**: Verify that the paths in `suricata.yaml` and `suricata-overrides.yaml` use forward slashes (`/`), not backslashes.
+- **No alerts appearing**: 
+  - Verify that `HOME_NET` in your configuration includes your subnet.
+  - Check that Suricata is capturing on the correct interface (e.g., the loopback adapter for local tests).
+- **Loopback capture**: Ensure you use the Npcap Loopback Adapter for localhost traffic, or use pcap replay as a fallback.
+- **Dashboard won't start**: Ensure dependencies are installed by running `pip install -r requirements.txt` before starting the dashboard.
+- **Firewall blocking**: The response engine must be run in an Administrator PowerShell session for live mode to successfully add firewall rules.
