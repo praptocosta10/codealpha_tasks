@@ -5,15 +5,19 @@ A comprehensive Network Intrusion Detection System built for Windows environment
 ## Architecture
 
 graph TD
-    A[Network Traffic\n(Npcap/Loopback)] -->|Captures Packets| B(Suricata NIDS Engine)
+    A[Network Traffic\n(Npcap/Loopback)] -->|Captures Packets| B(Suricata NIDS Engine) 
+    
     B -->|Matches Rules| C{Rules Engine\nC:\\NIDS\\rules}
+    
     C -->|Generates Alerts| D[Logs\nC:\\NIDS\\logs\\eve.json]
+    
     D -->|Tails & Parses| E(Response Engine\nresponse.py)
+    
     D -->|Visualizes| F(Dashboard\napp.py)
+    
     E -->|Executes Block| G[Windows Firewall]
     
     H[Test Scripts] -->|Generates Traffic| A
-```
 
 ## Prerequisites
 
