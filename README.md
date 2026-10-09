@@ -5,6 +5,7 @@ A comprehensive Network Intrusion Detection System built for Windows environment
 ## Architecture
 
 graph TD
+    
     A[Network Traffic\n(Npcap/Loopback)] -->|Captures Packets| B(Suricata NIDS Engine) 
     
     B -->|Matches Rules| C{Rules Engine\nC:\\NIDS\\rules}
